@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from log_results import LOG_FILE
 
@@ -12,7 +12,12 @@ SLOW_HTTP_LIMIT_MS = 1000.0
 PING_MAX_PACKET_LOSS_PERCENT = 25.0
 
 
-def _diagnose_run(run_number: int, record: Dict[str, Any]) -> List[str]:
+def _diagnose_run(
+    run_number: int,
+    record: Dict[str, Any],
+    slow_http_limit_ms: float,
+    ping_max_packet_loss_percent: float,
+) -> List[str]:
     """Describe co-occurring symptoms without claiming a proven root cause."""
     diagnoses = []
     ping = record.get("ping", {})
@@ -23,8 +28,8 @@ def _diagnose_run(run_number: int, record: Dict[str, Any]) -> List[str]:
     ping_average = ping.get("average_latency_ms")
     if packet_loss is not None and float(packet_loss) > 0:
         limit_note = (
-            f" at the {PING_MAX_PACKET_LOSS_PERCENT:.0f}% acceptance limit"
-            if float(packet_loss) == PING_MAX_PACKET_LOSS_PERCENT and ping.get("passed")
+            f" at the {ping_max_packet_loss_percent:.0f}% acceptance limit"
+            if float(packet_loss) == ping_max_packet_loss_percent and ping.get("passed")
             else ""
         )
         diagnoses.append(
@@ -32,7 +37,7 @@ def _diagnose_run(run_number: int, record: Dict[str, Any]) -> List[str]:
         )
 
     http_average = http.get("average_ms")
-    if http_average is not None and float(http_average) > SLOW_HTTP_LIMIT_MS:
+    if http_average is not None and float(http_average) > slow_http_limit_ms:
         timings = [
             float(value)
             for value in http.get("sample_latencies_ms", [])
@@ -61,7 +66,7 @@ def _diagnose_run(run_number: int, record: Dict[str, Any]) -> List[str]:
         else:
             diagnoses.append(
                 f"Run {run_number}: HTTP average {float(http_average):.1f} ms exceeded "
-                f"the {SLOW_HTTP_LIMIT_MS:.0f} ms limit."
+                f"the {slow_http_limit_ms:.0f} ms limit."
             )
 
         if (packet_loss is not None and float(packet_loss) > 0) or (
@@ -108,7 +113,7 @@ def load_run_records(path: Path = LOG_FILE) -> Tuple[List[Dict[str, Any]], List[
 
 
 def analyze_records(
-    records: List[Dict[str, Any]], slow_http_limit_ms: float = SLOW_HTTP_LIMIT_MS
+    records: List[Dict[str, Any]], slow_http_limit_ms: Optional[float] = None
 ) -> Dict[str, Any]:
     """Count check failures and summarize available latency measurements."""
     failures = {"dns": 0, "ping": 0, "http_performance": 0, "wifi": 0}
@@ -119,7 +124,18 @@ def analyze_records(
     diagnoses = []
 
     for run_number, record in enumerate(records, start=1):
-        diagnoses.extend(_diagnose_run(run_number, record))
+        thresholds = record.get("thresholds", {})
+        run_http_limit = float(
+            slow_http_limit_ms
+            if slow_http_limit_ms is not None
+            else thresholds.get("max_average_http_latency_ms", SLOW_HTTP_LIMIT_MS)
+        )
+        run_packet_loss_limit = float(
+            thresholds.get("max_packet_loss_percent", PING_MAX_PACKET_LOSS_PERCENT)
+        )
+        diagnoses.extend(
+            _diagnose_run(run_number, record, run_http_limit, run_packet_loss_limit)
+        )
         for component in ("dns", "ping", "http_performance"):
             if not record.get(component, {}).get("passed", False):
                 failures[component] += 1
@@ -131,7 +147,7 @@ def analyze_records(
         http_average = record.get("http_performance", {}).get("average_ms")
         if http_average is not None:
             http_averages.append(float(http_average))
-            if float(http_average) > slow_http_limit_ms:
+            if float(http_average) > run_http_limit:
                 slow_http_runs.append(run_number)
 
         ping_average = record.get("ping", {}).get("average_latency_ms")
@@ -171,9 +187,9 @@ def main() -> int:
     slow_runs = analysis["slow_http_runs"]
     if slow_runs:
         run_list = ", ".join(str(run) for run in slow_runs)
-        print(f"Slow HTTP average (over {SLOW_HTTP_LIMIT_MS:.0f} ms): run(s) {run_list}")
+        print(f"Slow HTTP average (over per-run configured limits): run(s) {run_list}")
     else:
-        print(f"Slow HTTP average (over {SLOW_HTTP_LIMIT_MS:.0f} ms): none")
+        print("Slow HTTP average (over per-run configured limits): none")
 
     print(f"Wi-Fi readings unavailable: {analysis['wifi_unavailable_runs']} run(s)")
     if analysis["diagnoses"]:

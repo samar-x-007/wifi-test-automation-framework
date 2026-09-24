@@ -105,6 +105,10 @@ def run_check(settings: dict, ping_target: str) -> int:
 
     run_record = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "thresholds": {
+            "max_packet_loss_percent": packet_loss_limit,
+            "max_average_http_latency_ms": http_latency_limit,
+        },
         "dns": {
             "host": dns_host,
             "passed": dns_result.resolved,

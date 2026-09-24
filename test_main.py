@@ -63,6 +63,10 @@ class MainTests(unittest.TestCase):
         self.assertEqual(append_record.call_args.args[0]["checks_passed"], 4)
         self.assertTrue(append_record.call_args.args[0]["wifi"]["passed"])
         self.assertEqual(append_record.call_args.args[0]["checks_total"], 4)
+        self.assertEqual(
+            append_record.call_args.args[0]["thresholds"],
+            {"max_packet_loss_percent": 25.0, "max_average_http_latency_ms": 1000.0},
+        )
 
     @patch("main.append_run_record")
     @patch("main.ping_host")

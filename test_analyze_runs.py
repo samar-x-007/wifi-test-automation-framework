@@ -47,6 +47,35 @@ class AnalyzeRunsTests(unittest.TestCase):
         self.assertTrue(any("does not establish the cause" in note for note in result["diagnoses"]))
         self.assertTrue(any("acceptance limit" in note for note in result["diagnoses"]))
 
+    def test_uses_thresholds_saved_with_each_run(self):
+        records = [{
+            "thresholds": {
+                "max_packet_loss_percent": 40.0,
+                "max_average_http_latency_ms": 100.0,
+            },
+            "dns": {"passed": True},
+            "ping": {"passed": True, "packet_loss_percent": 0.0, "average_latency_ms": 30.0},
+            "http_performance": {
+                "passed": False,
+                "average_ms": 150.0,
+                "minimum_ms": 140.0,
+                "maximum_ms": 160.0,
+                "sample_latencies_ms": [140.0, 150.0, 160.0],
+            },
+            "wifi": {
+                "connected": True,
+                "signal_dbm": -80,
+                "minimum_signal_dbm": -70,
+            },
+        }]
+
+        result = analyze_records(records)
+
+        self.assertEqual(result["slow_http_runs"], [1])
+        self.assertEqual(result["failures"]["http_performance"], 1)
+        self.assertTrue(any("consistently slow" in note for note in result["diagnoses"]))
+        self.assertTrue(any("weak Wi-Fi signal" in note for note in result["diagnoses"]))
+
     def test_loads_json_lines_and_reports_malformed_rows(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             log_path = Path(temporary_directory) / "run_history.jsonl"
