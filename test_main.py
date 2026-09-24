@@ -13,6 +13,17 @@ from wifi_check import WiFiStatus
 
 
 class MainTests(unittest.TestCase):
+    @patch("main.load_config", side_effect=ValueError("missing ping_host"))
+    def test_invalid_config_prints_error_and_stops(self, load_config):
+        output = io.StringIO()
+
+        with redirect_stdout(output):
+            exit_code = main.main()
+
+        self.assertEqual(exit_code, 2)
+        self.assertIn("Configuration error: missing ping_host", output.getvalue())
+        load_config.assert_called_once_with()
+
     @patch("main.append_run_record")
     @patch("main.ping_host")
     @patch("main.measure_http_performance")

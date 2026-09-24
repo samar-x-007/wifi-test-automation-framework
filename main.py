@@ -3,6 +3,7 @@
 import sys
 from datetime import datetime, timezone
 
+from config import load_config
 from dns_check import resolve_host
 from log_results import append_run_record
 from performance_check import measure_http_performance
@@ -10,33 +11,37 @@ from ping_check import ping_host
 from wifi_check import get_wifi_status
 
 
-DEFAULT_DNS_HOST = "example.com"
-DEFAULT_PING_HOST = "1.1.1.1"
-DEFAULT_HTTP_URL = "https://example.com"
-MAX_PACKET_LOSS_PERCENT = 25.0
-HTTP_PERFORMANCE_SAMPLES = 3
-MAX_AVERAGE_HTTP_LATENCY_MS = 1000.0
-
-
 def main() -> int:
-    ping_target = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_PING_HOST
+    try:
+        settings = load_config()
+    except ValueError as error:
+        print(f"Configuration error: {error}")
+        return 2
+
+    dns_host = settings["dns_host"]
+    ping_target = sys.argv[1] if len(sys.argv) > 1 else settings["ping_host"]
+    http_url = settings["http_url"]
+    packet_loss_limit = settings["max_packet_loss_percent"]
+    http_samples = settings["http_performance_samples"]
+    http_latency_limit = settings["max_average_http_latency_ms"]
+
     passed = 0
     total = 3
 
     print("=== DNS ===")
-    dns_result = resolve_host(DEFAULT_DNS_HOST)
+    dns_result = resolve_host(dns_host)
     if dns_result.resolved:
-        print(f"PASS: {DEFAULT_DNS_HOST} resolved to {', '.join(dns_result.addresses)}")
+        print(f"PASS: {dns_host} resolved to {', '.join(dns_result.addresses)}")
         passed += 1
     else:
-        print(f"FAIL: DNS lookup for {DEFAULT_DNS_HOST}: {dns_result.error}")
+        print(f"FAIL: DNS lookup for {dns_host}: {dns_result.error}")
 
     print("\n=== Ping ===")
     ping_result = ping_host(ping_target)
     ping_passed = (
         ping_result.reachable
         and ping_result.packet_loss_percent is not None
-        and ping_result.packet_loss_percent <= MAX_PACKET_LOSS_PERCENT
+        and ping_result.packet_loss_percent <= packet_loss_limit
     )
     if ping_passed:
         print(
@@ -50,16 +55,16 @@ def main() -> int:
 
     print("\n=== HTTP ===")
     performance_result = measure_http_performance(
-        DEFAULT_HTTP_URL, samples=HTTP_PERFORMANCE_SAMPLES
+        http_url, samples=http_samples
     )
     performance_passed = (
-        performance_result.successful_samples == HTTP_PERFORMANCE_SAMPLES
+        performance_result.successful_samples == http_samples
         and performance_result.average_ms is not None
-        and performance_result.average_ms <= MAX_AVERAGE_HTTP_LATENCY_MS
+        and performance_result.average_ms <= settings['max_average_http_latency_ms']
     )
     if performance_passed:
         print(
-            f"PASS: {performance_result.successful_samples}/{HTTP_PERFORMANCE_SAMPLES} requests; "
+            f"PASS: {performance_result.successful_samples}/{http_samples} requests; "
             f"min/avg/max {performance_result.minimum_ms:.1f}/"
             f"{performance_result.average_ms:.1f}/{performance_result.maximum_ms:.1f} ms"
         )
@@ -70,9 +75,9 @@ def main() -> int:
         else:
             detail = (
                 f"average latency {performance_result.average_ms:.1f} ms exceeds "
-                f"{MAX_AVERAGE_HTTP_LATENCY_MS:.0f} ms"
+                f"{settings['max_average_http_latency_ms']:.0f} ms"
             )
-        print(f"FAIL: {DEFAULT_HTTP_URL}: {detail}")
+        print(f"FAIL: {http_url}: {detail}")
 
     print("\n=== Wi-Fi signal ===")
     wifi_result = get_wifi_status()
@@ -84,7 +89,7 @@ def main() -> int:
     run_record = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
         "dns": {
-            "host": DEFAULT_DNS_HOST,
+            "host": dns_host,
             "passed": dns_result.resolved,
             "addresses": dns_result.addresses,
             "error": dns_result.error,
@@ -99,7 +104,7 @@ def main() -> int:
             "error": None if ping_passed else ping_result.output,
         },
         "http_performance": {
-            "url": DEFAULT_HTTP_URL,
+            "url": http_url,
             "passed": performance_passed,
             "requested_samples": performance_result.requested_samples,
             "successful_samples": performance_result.successful_samples,

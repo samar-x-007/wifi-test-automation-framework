@@ -1,0 +1,8 @@
+{
+  "dns_host": "example.com",
+  "ping_host": "1.1.1.1",
+  "http_url": "https://example.com",
+  "max_packet_loss_percent": 25.0,
+  "http_performance_samples": 3,
+  "max_average_http_latency_ms": 1000.0
+}
