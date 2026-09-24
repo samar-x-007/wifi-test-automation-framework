@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wi-Fi Test Run Report</title>
+  <style>
+    :root { color-scheme: light; --ink: #182230; --muted: #5b6878; --line: #dce3ea; --blue: #174ea6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f4f7fb; color: var(--ink); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { max-width: 1100px; margin: 36px auto; padding: 0 22px; }
+    h1 { margin: 0; font-size: 30px; letter-spacing: -.02em; }
+    h2 { margin: 30px 0 12px; font-size: 19px; }
+    .subtitle, small { color: var(--muted); }
+    .subtitle { margin: 4px 0 22px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+    .card, .panel { background: white; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+    .card span { display: block; color: var(--muted); font-size: 13px; }
+    .card strong { display: block; margin-top: 5px; font-size: 23px; }
+    .panel { padding: 0; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    th, td { padding: 13px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { background: #f8fafc; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    tr:last-child td { border-bottom: 0; }
+    td small { display: block; margin-top: 4px; }
+    .badge { display: inline-block; border-radius: 999px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+    .pass { color: #146c43; background: #e4f5ec; }
+    .fail { color: #a12622; background: #fde8e7; }
+    ul { margin: 0; padding: 2px 0 2px 22px; }
+    li + li { margin-top: 8px; }
+    .empty { color: var(--muted); text-align: center; }
+    footer { color: var(--muted); font-size: 12px; margin-top: 26px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Wi-Fi Test Run Report</h1>
+    <p class="subtitle">Generated 2026-09-24 22:38 UTC from 4 saved run(s).</p>
+    <section class="cards" aria-label="Run summary">
+      <div class="card"><span>Runs with all checks passing</span><strong>2 / 4</strong></div>
+      <div class="card"><span>DNS failures</span><strong>0</strong></div>
+      <div class="card"><span>Ping failures</span><strong>0</strong></div>
+      <div class="card"><span>HTTP performance failures</span><strong>2</strong></div>
+      <div class="card"><span>Average ping latency</span><strong>139.8 ms</strong></div>
+      <div class="card"><span>Average HTTP response</span><strong>807.1 ms</strong></div>
+    </section>
+    <h2>Run details</h2>
+    <div class="panel">
+      <table>
+        <thead><tr><th>Run</th><th>DNS</th><th>Ping</th><th>HTTP min / avg / max</th><th>Wi-Fi signal / noise</th></tr></thead>
+        <tbody><tr><td>1<small>2026-09-24T22:25:04.910464+00:00</small></td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span><small>4/4 replies; 39.3 ms</small></td><td><span class="badge pass">PASS</span><small>min / avg / max: 145.9 ms / 158.6 ms / 165.1 ms</small></td><td>Wi-Fi is off or not associated with a network.</td></tr>
+<tr><td>2<small>2026-09-24T22:30:11.314517+00:00</small></td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span><small>4/4 replies; 110.6 ms</small></td><td><span class="badge fail">FAIL</span><small>min / avg / max: 186.2 ms / 1172.9 ms / 2680.0 ms</small></td><td>-45 / -96 dBm</td></tr>
+<tr><td>3<small>2026-09-24T22:30:32.481159+00:00</small></td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span><small>3/4 replies; 369.5 ms</small></td><td><span class="badge fail">FAIL</span><small>min / avg / max: 152.4 ms / 1749.8 ms / 3424.9 ms</small></td><td>-44 / -97 dBm</td></tr>
+<tr><td>4<small>2026-09-24T22:35:32.470751+00:00</small></td><td><span class="badge pass">PASS</span></td><td><span class="badge pass">PASS</span><small>4/4 replies; 39.7 ms</small></td><td><span class="badge pass">PASS</span><small>min / avg / max: 137.9 ms / 147.1 ms / 157.4 ms</small></td><td>Wi-Fi is off or not associated with a network.</td></tr></tbody>
+      </table>
+    </div>
+    <h2>Diagnostics</h2>
+    <section class="panel" style="padding: 16px 20px"><ul><li>Run 2: HTTP times ranged from 186.2 to 2680.0 ms; the spread suggests intermittent delays.</li><li>Run 2: ping did not show the same issue; server or HTTP-path conditions are also possible.</li><li>Run 3: ping recorded 25.0% packet loss at the 25% acceptance limit.</li><li>Run 3: HTTP times ranged from 152.4 to 3424.9 ms; the spread suggests intermittent delays.</li><li>Run 3: HTTP delay coincided with ping degradation; this correlation does not establish the cause.</li></ul></section>
+    <footer>Wi-Fi values show signal and noise only; network names are not included. Latency and packet loss vary between runs.</footer>
+  </main>
+</body>
+</html>
