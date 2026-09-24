@@ -29,6 +29,20 @@ You can optionally provide a ping target for that run:
 python main.py 1.1.1.1
 ~~~
 
+## Monitor connection stability
+
+To run the full set of checks five times, waiting 30 seconds between runs:
+
+~~~bash
+python main.py --repeat 5 --interval 30
+~~~
+
+Each run is saved separately to the run history. The command returns a failure status if any run fails. You can still give a ping target, for example:
+
+~~~bash
+python main.py 8.8.8.8 --repeat 5 --interval 30
+~~~
+
 ## Change the check settings
 
 Edit config.json to change:

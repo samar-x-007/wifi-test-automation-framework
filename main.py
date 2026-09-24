@@ -1,6 +1,9 @@
 """Run the framework's DNS, ping, and HTTP checks in one report."""
 
+import argparse
+import math
 import sys
+import time
 from datetime import datetime, timezone
 
 from config import load_config
@@ -11,15 +14,8 @@ from ping_check import ping_host
 from wifi_check import get_wifi_status
 
 
-def main() -> int:
-    try:
-        settings = load_config()
-    except ValueError as error:
-        print(f"Configuration error: {error}")
-        return 2
-
+def run_check(settings: dict, ping_target: str) -> int:
     dns_host = settings["dns_host"]
-    ping_target = sys.argv[1] if len(sys.argv) > 1 else settings["ping_host"]
     http_url = settings["http_url"]
     packet_loss_limit = settings["max_packet_loss_percent"]
     http_samples = settings["http_performance_samples"]
@@ -158,6 +154,57 @@ def main() -> int:
 
     print(f"Summary: {passed}/{total} checks passed.")
     return 0 if passed == total and log_saved else 1
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(
+        description="Run Wi-Fi network checks once or repeat them to monitor stability."
+    )
+    parser.add_argument(
+        "ping_target",
+        nargs="?",
+        help="optional ping target; defaults to the value in config.json",
+    )
+    parser.add_argument(
+        "--repeat",
+        type=int,
+        default=1,
+        help="number of times to run all checks (default: 1)",
+    )
+    parser.add_argument(
+        "--interval",
+        type=float,
+        default=10.0,
+        help="seconds to wait between repeated runs (default: 10)",
+    )
+    args = parser.parse_args()
+
+    if args.repeat < 1:
+        parser.error("--repeat must be at least 1")
+    if not math.isfinite(args.interval) or args.interval < 0:
+        parser.error("--interval must be a finite number that is zero or greater")
+
+    try:
+        settings = load_config()
+    except ValueError as error:
+        print(f"Configuration error: {error}")
+        return 2
+
+    ping_target = args.ping_target or settings["ping_host"]
+    passed_runs = 0
+
+    for run_number in range(1, args.repeat + 1):
+        if args.repeat > 1:
+            print(f"\n=== Monitoring run {run_number}/{args.repeat} ===")
+        if run_check(settings, ping_target) == 0:
+            passed_runs += 1
+        if run_number < args.repeat:
+            print(f"\nWaiting {args.interval:g} seconds before the next run...")
+            time.sleep(args.interval)
+
+    if args.repeat > 1:
+        print(f"\nMonitor summary: {passed_runs}/{args.repeat} runs passed.")
+    return 0 if passed_runs == args.repeat else 1
 
 
 if __name__ == "__main__":

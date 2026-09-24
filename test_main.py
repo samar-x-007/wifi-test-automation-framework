@@ -3,7 +3,7 @@
 import io
 import unittest
 from contextlib import redirect_stdout
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 import main
 from dns_check import DNSResult
@@ -13,6 +13,20 @@ from wifi_check import WiFiStatus
 
 
 class MainTests(unittest.TestCase):
+    def test_repeat_mode_runs_checks_and_waits_between_them(self):
+        settings = {"ping_host": "1.1.1.1"}
+        with patch("main.sys.argv", ["main.py", "--repeat", "3", "--interval", "2"]):
+            with patch("main.load_config", return_value=settings):
+                with patch("main.run_check", side_effect=[0, 1, 0]) as run_check:
+                    with patch("main.time.sleep") as sleep:
+                        with redirect_stdout(io.StringIO()):
+                            exit_code = main.main()
+
+        self.assertEqual(exit_code, 1)
+        self.assertEqual(run_check.call_count, 3)
+        self.assertEqual(sleep.call_args_list, [call(2.0), call(2.0)])
+
+    @patch("main.sys.argv", ["main.py"])
     @patch("main.load_config", side_effect=ValueError("missing ping_host"))
     def test_invalid_config_prints_error_and_stops(self, load_config):
         output = io.StringIO()
