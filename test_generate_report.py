@@ -37,6 +37,28 @@ class RenderReportTests(unittest.TestCase):
         self.assertIn("intermittent delays", report)
         self.assertIn("does not establish the cause", report)
 
+    def test_report_shows_wifi_signal_failure(self):
+        record = {
+            "checks_passed": 3,
+            "checks_total": 4,
+            "dns": {"passed": True},
+            "ping": {"passed": True},
+            "http_performance": {"passed": True},
+            "wifi": {
+                "passed": False,
+                "connected": True,
+                "signal_dbm": -78,
+                "noise_dbm": -95,
+                "minimum_signal_dbm": -70,
+            },
+        }
+
+        report = render_report([record])
+
+        self.assertIn("Wi-Fi signal failures</span><strong>1</strong>", report)
+        self.assertIn("signal -78 / noise -95 dBm; minimum -70 dBm", report)
+        self.assertIn('class="badge fail">FAIL</span>', report)
+
     def test_report_escapes_values_from_run_logs(self):
         record = {
             "dns": {"passed": False},

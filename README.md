@@ -39,8 +39,9 @@ Edit config.json to change:
 - max_packet_loss_percent: maximum packet loss for a passing ping check
 - http_performance_samples: number of HTTP requests to measure
 - max_average_http_latency_ms: maximum average HTTP response time for a passing check
+- min_wifi_signal_dbm: minimum acceptable Wi-Fi signal strength in dBm; a less-negative reading is stronger
 
-The command-line ping target, when provided, overrides ping_host for that run. The program checks the configuration when it starts and reports an error if a setting is invalid.
+The command-line ping target, when provided, overrides ping_host for that run. A Wi-Fi check passes when signal strength is at least min_wifi_signal_dbm. The program checks the configuration when it starts and reports an error if a setting is invalid.
 
 ## Logs and reports
 

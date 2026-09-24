@@ -71,7 +71,10 @@ def _diagnose_run(run_number: int, record: Dict[str, Any]) -> List[str]:
                 f"Run {run_number}: HTTP delay coincided with ping degradation; "
                 "this correlation does not establish the cause."
             )
-        elif wifi.get("signal_dbm") is not None and int(wifi["signal_dbm"]) <= -70:
+        elif (
+            wifi.get("signal_dbm") is not None
+            and int(wifi["signal_dbm"]) < int(wifi.get("minimum_signal_dbm", -70))
+        ):
             diagnoses.append(
                 f"Run {run_number}: slow HTTP also coincided with a weak Wi-Fi signal "
                 f"({wifi['signal_dbm']} dBm)."
@@ -108,7 +111,7 @@ def analyze_records(
     records: List[Dict[str, Any]], slow_http_limit_ms: float = SLOW_HTTP_LIMIT_MS
 ) -> Dict[str, Any]:
     """Count check failures and summarize available latency measurements."""
-    failures = {"dns": 0, "ping": 0, "http_performance": 0}
+    failures = {"dns": 0, "ping": 0, "http_performance": 0, "wifi": 0}
     slow_http_runs = []
     http_averages = []
     ping_averages = []
@@ -117,9 +120,13 @@ def analyze_records(
 
     for run_number, record in enumerate(records, start=1):
         diagnoses.extend(_diagnose_run(run_number, record))
-        for component in failures:
+        for component in ("dns", "ping", "http_performance"):
             if not record.get(component, {}).get("passed", False):
                 failures[component] += 1
+
+        wifi = record.get("wifi", {})
+        if "passed" in wifi and not wifi["passed"]:
+            failures["wifi"] += 1
 
         http_average = record.get("http_performance", {}).get("average_ms")
         if http_average is not None:

@@ -24,9 +24,10 @@ def main() -> int:
     packet_loss_limit = settings["max_packet_loss_percent"]
     http_samples = settings["http_performance_samples"]
     http_latency_limit = settings["max_average_http_latency_ms"]
+    minimum_wifi_signal_dbm = settings["min_wifi_signal_dbm"]
 
     passed = 0
-    total = 3
+    total = 4
 
     print("=== DNS ===")
     dns_result = resolve_host(dns_host)
@@ -60,7 +61,7 @@ def main() -> int:
     performance_passed = (
         performance_result.successful_samples == http_samples
         and performance_result.average_ms is not None
-        and performance_result.average_ms <= settings['max_average_http_latency_ms']
+        and performance_result.average_ms <= http_latency_limit
     )
     if performance_passed:
         print(
@@ -75,16 +76,36 @@ def main() -> int:
         else:
             detail = (
                 f"average latency {performance_result.average_ms:.1f} ms exceeds "
-                f"{settings['max_average_http_latency_ms']:.0f} ms"
+                f"{http_latency_limit:.0f} ms"
             )
         print(f"FAIL: {http_url}: {detail}")
 
     print("\n=== Wi-Fi signal ===")
     wifi_result = get_wifi_status()
-    if wifi_result.connected and wifi_result.signal_dbm is not None and wifi_result.noise_dbm is not None:
-        print(f"INFO: signal {wifi_result.signal_dbm} dBm; noise {wifi_result.noise_dbm} dBm")
+    wifi_passed = (
+        wifi_result.connected
+        and wifi_result.signal_dbm is not None
+        and wifi_result.signal_dbm >= minimum_wifi_signal_dbm
+    )
+    if wifi_result.signal_dbm is not None:
+        noise_text = (
+            f"; noise {wifi_result.noise_dbm} dBm"
+            if wifi_result.noise_dbm is not None
+            else ""
+        )
+        if wifi_passed:
+            print(
+                f"PASS: signal {wifi_result.signal_dbm} dBm meets minimum "
+                f"{minimum_wifi_signal_dbm} dBm{noise_text}"
+            )
+            passed += 1
+        else:
+            print(
+                f"FAIL: signal {wifi_result.signal_dbm} dBm is below the required "
+                f"{minimum_wifi_signal_dbm} dBm{noise_text}"
+            )
     else:
-        print(f"INFO: {wifi_result.error or 'Wi-Fi signal measurements are unavailable.'}")
+        print(f"FAIL: {wifi_result.error or 'Wi-Fi signal measurements are unavailable.'}")
 
     run_record = {
         "timestamp_utc": datetime.now(timezone.utc).isoformat(),
@@ -116,6 +137,8 @@ def main() -> int:
             "errors": performance_result.errors,
         },
         "wifi": {
+            "passed": wifi_passed,
+            "minimum_signal_dbm": minimum_wifi_signal_dbm,
             "connected": wifi_result.connected,
             "signal_dbm": wifi_result.signal_dbm,
             "noise_dbm": wifi_result.noise_dbm,

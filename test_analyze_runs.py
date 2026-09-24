@@ -38,7 +38,7 @@ class AnalyzeRunsTests(unittest.TestCase):
         result = analyze_records(records, slow_http_limit_ms=1000.0)
 
         self.assertEqual(result["total_runs"], 2)
-        self.assertEqual(result["failures"], {"dns": 1, "ping": 0, "http_performance": 1})
+        self.assertEqual(result["failures"], {"dns": 1, "ping": 0, "http_performance": 1, "wifi": 0})
         self.assertEqual(result["slow_http_runs"], [2])
         self.assertEqual(result["average_http_ms"], 810.0)
         self.assertEqual(result["average_ping_ms"], 199.75)

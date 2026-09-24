@@ -13,6 +13,7 @@ REQUIRED_SETTINGS = {
     "max_packet_loss_percent",
     "http_performance_samples",
     "max_average_http_latency_ms",
+    "min_wifi_signal_dbm",
 }
 
 
@@ -58,5 +59,9 @@ def load_config(path=CONFIG_PATH):
         raise ValueError("'max_average_http_latency_ms' must be a positive number.")
     if not math.isfinite(latency_limit) or latency_limit <= 0:
         raise ValueError("'max_average_http_latency_ms' must be a positive number.")
+
+    min_signal = settings["min_wifi_signal_dbm"]
+    if type(min_signal) is not int or not -120 <= min_signal <= 0:
+        raise ValueError("'min_wifi_signal_dbm' must be a whole number from -120 to 0.")
 
     return settings

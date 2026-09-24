@@ -15,6 +15,7 @@ VALID_SETTINGS = {
     "max_packet_loss_percent": 25.0,
     "http_performance_samples": 3,
     "max_average_http_latency_ms": 1000.0,
+    "min_wifi_signal_dbm": -70,
 }
 
 
@@ -43,4 +44,9 @@ class ConfigTests(unittest.TestCase):
     def test_rejects_zero_http_samples(self):
         settings = dict(VALID_SETTINGS, http_performance_samples=0)
         with self.assertRaisesRegex(ValueError, "positive whole number"):
+            self.load_settings(settings)
+
+    def test_rejects_wifi_threshold_outside_rssi_range(self):
+        settings = dict(VALID_SETTINGS, min_wifi_signal_dbm=5)
+        with self.assertRaisesRegex(ValueError, "from -120 to 0"):
             self.load_settings(settings)

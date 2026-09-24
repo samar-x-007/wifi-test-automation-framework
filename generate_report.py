@@ -45,18 +45,25 @@ def render_report(records: List[Dict[str, Any]]) -> str:
         http_range = " / ".join(
             _format_ms(http.get(key)) for key in ("minimum_ms", "average_ms", "maximum_ms")
         )
+        wifi_status = (
+            _status_badge(bool(wifi["passed"]))
+            if "passed" in wifi
+            else ""
+        )
         wifi_summary = (
-            f"{wifi.get('signal_dbm')} / {wifi.get('noise_dbm')} dBm"
+            f"signal {wifi.get('signal_dbm')} / noise {wifi.get('noise_dbm')} dBm"
             if wifi.get("signal_dbm") is not None and wifi.get("noise_dbm") is not None
             else str(wifi.get("error") or "Unavailable")
         )
+        if wifi.get("minimum_signal_dbm") is not None:
+            wifi_summary += f"; minimum {wifi['minimum_signal_dbm']} dBm"
         rows.append(
             "<tr>"
             f"<td>{run_number}<small>{timestamp}</small></td>"
             f"<td>{_status_badge(bool(dns.get('passed')))}</td>"
             f"<td>{_status_badge(bool(ping.get('passed')))}<small>{escape(ping_summary)}</small></td>"
             f"<td>{_status_badge(bool(http.get('passed')))}<small>min / avg / max: {escape(http_range)}</small></td>"
-            f"<td>{escape(wifi_summary)}</td>"
+            f"<td>{wifi_status}<small>{escape(wifi_summary)}</small></td>"
             "</tr>"
         )
 
@@ -115,6 +122,7 @@ def render_report(records: List[Dict[str, Any]]) -> str:
       <div class="card"><span>DNS failures</span><strong>{{DNS_FAILURES}}</strong></div>
       <div class="card"><span>Ping failures</span><strong>{{PING_FAILURES}}</strong></div>
       <div class="card"><span>HTTP performance failures</span><strong>{{HTTP_FAILURES}}</strong></div>
+      <div class="card"><span>Wi-Fi signal failures</span><strong>{{WIFI_FAILURES}}</strong></div>
       <div class="card"><span>Average ping latency</span><strong>{{AVERAGE_PING}}</strong></div>
       <div class="card"><span>Average HTTP response</span><strong>{{AVERAGE_HTTP}}</strong></div>
     </section>
@@ -127,7 +135,7 @@ def render_report(records: List[Dict[str, Any]]) -> str:
     </div>
     <h2>Diagnostics</h2>
     <section class="panel" style="padding: 16px 20px"><ul>{{DIAGNOSTICS}}</ul></section>
-    <footer>Wi-Fi values show signal and noise only; network names are not included. Latency and packet loss vary between runs.</footer>
+    <footer>Wi-Fi signal passes when it meets the run's configured minimum. Network names are not included. Latency and packet loss vary between runs.</footer>
   </main>
 </body>
 </html>
@@ -139,6 +147,7 @@ def render_report(records: List[Dict[str, Any]]) -> str:
         "{{DNS_FAILURES}}": str(analysis["failures"]["dns"]),
         "{{PING_FAILURES}}": str(analysis["failures"]["ping"]),
         "{{HTTP_FAILURES}}": str(analysis["failures"]["http_performance"]),
+        "{{WIFI_FAILURES}}": str(analysis["failures"]["wifi"]),
         "{{AVERAGE_PING}}": escape(average_ping),
         "{{AVERAGE_HTTP}}": escape(average_http),
         "{{ROWS}}": "\n".join(rows),
