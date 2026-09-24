@@ -37,6 +37,32 @@ class RenderReportTests(unittest.TestCase):
         self.assertIn("intermittent delays", report)
         self.assertIn("does not establish the cause", report)
 
+    def test_report_charts_ping_and_http_latency_across_runs(self):
+        records = [
+            {
+                "ping": {"average_latency_ms": 25},
+                "http_performance": {"average_ms": 120},
+            },
+            {
+                "ping": {"average_latency_ms": 40},
+                "http_performance": {"average_ms": 180},
+            },
+        ]
+
+        report = render_report(records)
+
+        self.assertIn("Latency across runs", report)
+        self.assertIn('aria-label="Average ping and HTTP latency across 2 runs"', report)
+        self.assertIn("Ping average", report)
+        self.assertIn("HTTP average", report)
+        self.assertIn("Run 1: Ping 25 ms", report)
+        self.assertIn("Run 2: HTTP 180 ms", report)
+
+    def test_report_has_message_when_no_latency_data_exists(self):
+        report = render_report([{"ping": {}, "http_performance": {}}])
+
+        self.assertIn("No latency measurements are available yet.", report)
+
     def test_report_shows_wifi_signal_failure(self):
         record = {
             "checks_passed": 3,
