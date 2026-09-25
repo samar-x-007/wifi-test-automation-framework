@@ -7,6 +7,13 @@ A Python framework for checking DNS resolution, ping connectivity, HTTP response
 - macOS
 - Python 3.9 or newer
 
+## Get the project
+
+~~~bash
+git clone https://github.com/samar-x-007/wifi-test-automation-framework.git
+cd wifi-test-automation-framework
+~~~
+
 ## Install
 
 From the project folder, create and activate a virtual environment, then install the development dependencies:
